@@ -1,56 +1,99 @@
 "use client";
-import { useState } from "react";
-import type { TodoResponse } from "@/schemas/todos"; 
+import { useEffect, useState } from "react";
+import type { TodoResponse } from "@/schemas/todos";
+import axios from "axios";
 
 function Todos() {
+  const [serverError, setServerError] = useState<string | null>(null);
   const [newTodo, setNewTodo] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
 
-  const [todos, setTodos] = useState<TodoResponse[]>([
-    { id: "1", title: "Learn Next.js", completed: false, createdAt: new Date().toISOString() },
-    { id: "2", title: "Practice DSA", completed: true, createdAt: new Date().toISOString() },
-  ]);
+  const [todos, setTodos] = useState<TodoResponse[]>([]);
 
-  const toggleChange = (id: string) => {
-    setTodos((prev) =>
-      prev.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
+  const toggleChange = async (id: string) => {
+    try {
+      const result = await axios.put(
+        `/api/todos/${id}`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (result.data.success) {
+        setTodos((prev) =>
+          prev.map((todo) =>
+            todo._id === id ? { ...todo, completed: true } : todo
+          )
+        );
+      } else {
+        console.log(result.data.message);
+      }
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+      }
+     
+        console.log(error);
+   
+    }
   };
 
-  const addTodo =async (e: React.FormEvent<HTMLFormElement>) => {
+  const addTodo = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!newTodo.trim()) {
       setFormError("Todo can't be empty");
       return;
     }
-
-    // setTodos((prev) => [
-    //   ...prev,
-    //   {
-    //     id: crypto.randomUUID(),
-    //     title: newTodo.trim(),
-    //     completed: false,
-    //     createdAt: new Date().toISOString(),
-    //   },
-    // ]);
-
-    // setNewTodo("");
-    // setFormError(null);
     try {
-      
+      const result = await axios.post(
+        "/api/todos",
+        {
+          title: newTodo,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-type": "application/json",
+          },
+        }
+      );
+      console.log(result.data);
+      if (result.data.success) {
+        const { _id, title, completed, createdAt } = result.data.todo;
+        setTodos((prev) => [...prev, { _id, title, completed, createdAt }]);
+      }
     } catch (error) {
-      
+      if (axios.isAxiosError(error)) {
+        setServerError(error.response?.data.message);
+      }
     }
+    setNewTodo("");
   };
+
+  useEffect(() => {
+    const Init = async () => {
+      try {
+        console.log("hiii");
+        const result = await axios.get("/api/todos", {
+          withCredentials: true,
+        });
+
+        if (result.data.success) {
+          console.log(result.data);
+          setTodos(result.data.todos);
+        }
+      } catch (error) {
+        console.log("error", error);
+      }
+    };
+    Init();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col items-center pt-10">
       <h1 className="mb-6 text-2xl font-bold">Todos</h1>
 
-     
       <form
         onSubmit={addTodo}
         className="mb-2 flex w-full max-w-md items-center gap-2 rounded-xl bg-white p-2 shadow"
@@ -77,7 +120,7 @@ function Todos() {
       <ul className="w-full max-w-md space-y-3">
         {todos.map((todo) => (
           <li
-            key={todo.id}
+            key={todo._id}
             className="flex items-center justify-between rounded-lg border px-4 py-3 shadow-sm transition hover:bg-gray-50"
           >
             <span
@@ -92,7 +135,7 @@ function Todos() {
               type="checkbox"
               checked={todo.completed}
               disabled={todo.completed}
-              onChange={() => toggleChange(todo.id)}
+              onChange={() => toggleChange(todo._id)}
               className="h-4 w-4 cursor-pointer"
             />
           </li>

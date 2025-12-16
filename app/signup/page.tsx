@@ -69,6 +69,7 @@ function RegisterForm() {
       if (!result.data.success) {
         setServerError(result.data.message);
       } else {
+        localStorage.setItem("loggedin", "true");
         router.push("/");
       }
     } catch (err) {

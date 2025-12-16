@@ -9,7 +9,7 @@ export const todoCreateSchema = z.object({
 
 
 export const todoResponseSchema = z.object({
-  id: z.string(),
+  _id: z.string(),
   title: z.string(),
   completed: z.boolean(),
   createdAt: z.string(),

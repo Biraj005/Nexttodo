@@ -43,6 +43,7 @@ function LoginForm() {
     try {
       const result = await axios.post("/api/auth/login", formData);
       if (result.data.success) {
+       localStorage.setItem("loggedin", "true");
         router.push("/");
       } else {
         setServerError(result.data.message);
